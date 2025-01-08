@@ -10,28 +10,31 @@ def index(request):
 
 
 def counter(request):
-    text = request.POST['text']
-    amount_of_words = len(text.split())
-    return render(request, 'counter.html', {'amount_words': amount_of_words})
+    posts = [1,2,3,4,5,'tim','tom','john']
+
+    # text = request.POST['text']
+    # amount_of_words = len(text.split())
+    return render(request, 'counter.html', {'posts': posts})
 
 
 def register(request):
     if request.method == 'POST':
-        username = request.POST.get('username') 
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        password2 = request.POST.get('password2')
+        try:
+            username = request.POST['username'] 
+            email = request.POST['email']
+            password = request.POST['password']
+            password2 = request.POST['password2']
 
-        if not username or not email or not password or not password2:
-            messages.error(request, 'All fields are required.')
+        except KeyError as e:
+            messages.error(request, f'Missing required field: {str(e)}')
             return redirect('register')
 
         if password == password2:
             if User.objects.filter(email=email).exists():
-                messages.error(request, 'Email already used.')
+                messages.info(request, 'Email already used.')
                 return redirect('register')
             elif User.objects.filter(username=username).exists():
-                messages.error(request, 'Username already used.')
+                messages.info(request, 'Username already used.')
                 return redirect('register')
             else:
                 user = User.objects.create_user(username=username, email=email, password=password)
@@ -39,7 +42,39 @@ def register(request):
                 messages.success(request, 'Account created successfully!')
                 return redirect('login')
         else:
-            messages.error(request, 'Passwords do not match.')
+            messages.info(request, 'Passwords do not match.')
             return redirect('register')
     else:
         return render(request, 'register.html')
+    
+
+
+def login(request):
+    if request.method == 'POST':
+        try:
+            username = request.POST['username']
+            password = request.POST['password']
+
+            user = auth.authenticate(username=username, password=password)
+
+            if user is not None:
+                auth.login(request, user)
+                return redirect('/')
+            else:
+                messages.info(request, 'Invalid username or password.')
+                return redirect('login')
+        except KeyError:
+            messages.info(request, 'Please fill in all fields.')
+            return redirect('login')
+    else:
+        return render(request, 'login.html')
+    
+
+
+def logout(request):
+    auth.logout(request)
+    return redirect('/')
+
+
+def post(request, pk):
+    return render(request, 'post.html', {'pk': pk})
